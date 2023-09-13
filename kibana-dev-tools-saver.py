@@ -16,7 +16,7 @@ KIBANA_URLS = [
 ]
 SOURCE_DIR = "/mnt/c/Users/<user>/AppData/Local/Google/Chrome/User Data/Default/Local Storage/leveldb/"
 TEMP_DIR = "/tmp/kibana-dev-tools-saver/"
-DEFAULT_FOLDER = None
+SAVE_FOLDER = None
 DEFAULT_PREFIX = ""
 DEFAULT_TIME = None
 
@@ -24,7 +24,7 @@ DEFAULT_TIME = None
 parser = argparse.ArgumentParser(description="Extract and save Kibana's console data from Chrome's localStorage.")
 parser.add_argument("-sd", "--source-dir", type=str, default=SOURCE_DIR, help="Source directory of Chrome's LevelDB.")
 parser.add_argument("-td", "--temp-dir", type=str, default=TEMP_DIR, help="Temporary directory to copy LevelDB for processing.")
-parser.add_argument("-sf", "--save-folder", type=str, default=DEFAULT_FOLDER, help="Target folder to save the console outputs.")
+parser.add_argument("-sf", "--save-folder", type=str, default=SAVE_FOLDER, help="Target folder to save the console outputs.")
 parser.add_argument("-p", "--prefix", type=str, default=DEFAULT_PREFIX, help="Prefix to prepend to saved filenames.")
 parser.add_argument("-t", "--time", type=int, default=DEFAULT_TIME, help="Time in seconds to wait between reruns of the script.")
 parser.add_argument("-q", "--quiet", action="store_true", help="Suppress output if saving to a file.")
@@ -76,7 +76,7 @@ def extract_console_data_from_leveldb():
                     # Removing the first character which is a non-JSON character.
                     clean_value = value[1:].decode('utf-8')
                     json_data = json.loads(clean_value)
-                    text_content = json_data.get('text', '').replace('\\n', '\n').replace('\\r', '\r')
+                    text_content = '\n'.join(json_data.get('text', '').splitlines()) # fix windows like characters (^M)
                     yield origin, text_content
                 except json.JSONDecodeError:
                     logging.warning(f"Invalid JSON for key {key}. Raw value: {value}")
