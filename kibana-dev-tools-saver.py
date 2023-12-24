@@ -70,6 +70,12 @@ def delete_temp_dir():
 def extract_console_data_from_leveldb():
     db = plyvel.DB(args.temp_dir, create_if_missing=False)
     for key, value in db.iterator():
+        try:
+            key_utf8 = key.decode('utf-8')
+        except UnicodeDecodeError:
+            logging.warning(f"Key cannot be decoded as UTF-8: {key}")
+            continue
+
         for origin in KIBANA_URLS:
             if origin in key.decode('utf-8') and "sense:console_local_text-object_" in key.decode('utf-8'):
                 try:
