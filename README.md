@@ -79,7 +79,7 @@ Instead of using arguments you can specify defaults inside of the script.
 
 ### CorruptionError
 
-Sometimes the script copies levelDB while Chrome is writting to it, which results in it's corruption.
+Sometimes the script copies levelDB while Chrome is writting to it, which results in the script's **copy** of this DB stored in temp to become corrupted.
 Re-run the script few more times to see if the problem disappears, or else open an issue and provide information about your env.
 ```bash
 Traceback (most recent call last):
