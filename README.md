@@ -8,88 +8,126 @@ In the meantime, I have not found any tool that would help to backup consoles qu
 
 ## Description
 
-Kibana Dev Tools Saver is a Python script designed to extract and save Kibana's Dev Tools console data from ***Google Chrome's*** `localStorage`. It navigates through the LevelDB storage utilized by Chrome to store web data and filters out Kibana console queries for specified origins. The script offers flexibility in output options, allowing users to save the queries to files or view them directly in the console.
-
-> Note: Only `Google Chrome's` localStorage is supported at the moment.
+Kibana Dev Tools Saver is a Python script designed to extract and save Kibana's Dev Tools console data from ***Google Chrome*** or ***Firefox*** `localStorage`. It navigates through the LevelDB storage used by Chrome (or the SQLite storage used by Firefox) to filter out Kibana console queries for specified origins. The script offers flexibility in output options, allowing users to save the queries to files or view them directly in the console.
 
 ## Features
 
-- **Extract Dev Tools Queries**: Navigate Chrome's underlying LevelDB structure to access `localStorage` data related to Kibana's Dev Tools.
-- **Configurable Origins**: Specify which Kibana instances (by origin) you want to extract queries from.
+- **Extract Dev Tools Queries**: Access `localStorage` data related to Kibana's Dev Tools from Chrome's LevelDB or Firefox's SQLite storage.
+- **Firefox & Chrome Support**: Works with both browsers — browser is detected automatically from the path passed to `--source-db-path`.
+- **Configurable Origins**: Specify which Kibana instances (by origin) you want to extract queries from (Chrome mode).
 - **Flexible Output**: Choose to print extracted queries to the console or save them to files.
 - **Continuous Monitoring**: Option to keep the script running and periodically update the saved queries.
 - **Logging & Error Handling**: Comprehensive logging provides insights into the script's operations and any potential issues.
-- **Customizable Directories**: Specify source and temporary directories for Chrome's LevelDB.
+- **Customizable Paths**: Specify source and temporary paths for browser storage.
 
 ## Prerequisites
 
-Ensure you have Python3 and the required libraries installed:
-```bash
-pip3 install plyvel argparse logging
-```
-OR
-```bash
-pip3 install -r requirements.txt
-```
-
-## Usage
-
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/kibana-dev-tools-saver.git
+git clone https://github.com/DimDroll/kibana-dev-tools-saver.git
 cd kibana-dev-tools-saver
 ```
 
-2. Run the script:
+2. Ensure you have Python 3 installed, then set up a virtual environment and install dependencies:
 ```bash
+python3 -m venv venv
+source venv/bin/activate        # On Windows (WSL): source venv/bin/activate
+                                # On Windows native: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+> **Note:** `plyvel` (for Chrome/LevelDB) requires `libleveldb` to be installed on your system.
+> On Ubuntu/Debian: `sudo apt-get install libleveldb-dev`
+
+## Usage
+
+Activate the virtual environment and run the script:
+```bash
+source venv/bin/activate
 python3 kibana-dev-tools-saver.py
 ```
 
 ### Arguments:
 
-| Short | Long           | Description |
-|-------|----------------|-------------|
-| `-sd` | `--source-dir` | Specify the source directory of Chrome's LevelDB. (Default set in the script) |
-| `-td` | `--temp-dir`   | Specify a temporary directory to copy LevelDB for processing. (Default set in the script) |
-| `-sf` | `--save-folder`| Specify a target folder to save the console outputs. (Defaults to console output if not specified) |
-| `-p`  | `--prefix`     | Add a prefix to the saved file names. (Optional) |
-| `-t`  | `--time`       | Set a time interval (in seconds) for how often the script should rerun and refresh the saved queries. (Optional) |
-| `-q`  | `--quiet`      | Suppress certain output logs. Useful when you're saving to a file and don't want to see every update in the console. |
-| `-ku` | `--kibana-urls`| Specify Kibana URLs separated by a comma to indicate from which origins you'd like to extract data. |
+| Short | Long               | Required | Browser        | Default | Description |
+|-------|--------------------|----------|----------------|---------|-------------|
+| `-sdp`| `--source-db-path` | Yes      | Chrome/Firefox | `-` | Path to browser storage. A **directory** for Chrome (LevelDB) or a **file** for Firefox (`data.sqlite`). Browser is detected automatically. |
+| `-tp` | `--temp-path`      | No       | Chrome/Firefox | `/tmp/kibana-dev-tools-saver/` | Temporary directory to copy browser storage for processing. |
+| `-ku` | `--kibana-urls`    | No       | Chrome         | `https://kibana1-example.com, https://kibana2-example.com` | Specify Kibana URLs separated by a comma to indicate from which origins you'd like to extract data. |
+| `-sf` | `--save-folder`    | No       | Chrome/Firefox | `-` (print to console) | Specify a target folder to save the console outputs. |
+| `-p`  | `--prefix`         | No       | Chrome/Firefox | `""` | Add a prefix to the saved file names. |
+| `-t`  | `--time`           | No       | Chrome/Firefox | `-` (run once) | Set a time interval (in seconds) for how often the script should rerun and refresh the saved queries. |
+| `-q`  | `--quiet`          | No       | Chrome/Firefox | `False` | Suppress certain output logs. Useful when you're saving to a file and don't want to see every update in the console. |
 
 
 ### Examples:
 
-As I developed it in Windows 10 WSL v2 Ubuntu Linux the path to Chrome localStorage folder is specified through the mount.
+As I developed it in Windows 10 WSL v2 Ubuntu Linux the paths to browser data folders are specified through the WSL mount point `/mnt/c/`.
 
-**Specify custom LevelDB directories and Kibana URLs:**
-Replace <user> with your Windows username.
+#### Chrome
+
+Replace `<user>` with your Windows username.
+
+**Specify LevelDB path and Kibana URLs:**
 ```bash
-python3 kibana-dev-tools-saver.py -sd "/mnt/c/Users/<user>/AppData/Local/Google/Chrome/User Data/Default/Local Storage/leveldb/" -ku "https://kibana1.example.com,https://kibana2.example.com"
+python3 kibana-dev-tools-saver.py \
+  -sdp "/mnt/c/Users/<user>/AppData/Local/Google/Chrome/User Data/Default/Local Storage/leveldb/" \
+  -ku "https://kibana1.example.com,https://kibana2.example.com"
 ```
 
-**Run continuously every 60 seconds in quite mode and save to specific folder with a prefix using specific temp folder:**
+**Run continuously every 60 seconds in quiet mode, save to a folder with a prefix:**
 ```bash
-python3 kibana-dev-tools-saver.py -t 60 -sf /path/to/save -p myprefix_ -td /tmp/kibana-dev-tools-saver -q
+python3 kibana-dev-tools-saver.py \
+  -sdp "/mnt/c/Users/<user>/AppData/Local/Google/Chrome/User Data/Default/Local Storage/leveldb/" \
+  -t 60 -sf /path/to/save -p myprefix_ -tp /tmp/kibana-dev-tools-saver -q
+```
+
+#### Firefox
+
+Firefox stores one `data.sqlite` file per origin inside the profile directory at:
+```
+<profile>/storage/default/https+++<kibana-hostname>/ls/data.sqlite
+```
+
+Replace `<user>` and `<profile>` with your Windows username and Firefox profile folder name.
+
+**Extract and print to console:**
+```bash
+python3 kibana-dev-tools-saver.py \
+  -sdp "/mnt/c/Users/<user>/AppData/Roaming/Mozilla/Firefox/Profiles/<profile>/storage/default/https+++<kibana-hostname>/ls/data.sqlite"
+```
+
+**Save to a folder with a prefix:**
+```bash
+python3 kibana-dev-tools-saver.py \
+  -sdp "/mnt/c/Users/<user>/AppData/Roaming/Mozilla/Firefox/Profiles/<profile>/storage/default/https+++<kibana-hostname>/ls/data.sqlite" \
+  -sf /path/to/save -p firefox_
+```
+
+**Run continuously every 60 seconds in quiet mode:**
+```bash
+python3 kibana-dev-tools-saver.py \
+  -sdp "/mnt/c/Users/<user>/AppData/Roaming/Mozilla/Firefox/Profiles/<profile>/storage/default/https+++<kibana-hostname>/ls/data.sqlite" \
+  -t 60 -sf /path/to/save -q
 ```
 
 Instead of using arguments you can specify defaults inside of the script.
 
 ## Troubleshooting
 
-### CorruptionError
+### CorruptionError (Chrome only)
 
-Sometimes the script copies levelDB while Chrome is writting to it, which results in the script's **copy** of this DB stored in temp to become corrupted.
-Re-run the script few more times to see if the problem disappears, or else open an issue and provide information about your env.
+Sometimes the script copies LevelDB while Chrome is writing to it, which results in the script's **copy** of this DB stored in temp to become corrupted.
+Re-run the script a few more times to see if the problem disappears, or else open an issue and provide information about your env.
 ```bash
 Traceback (most recent call last):
-  File "/opt/work/kibana-dev-tools-saver/./kibana-dev-tools-saver.py", line 121, in <module>
+  File "kibana-dev-tools-saver.py", line 198, in <module>
     main()
-  File "/opt/work/kibana-dev-tools-saver/./kibana-dev-tools-saver.py", line 88, in main
-    for origin, text_content in extract_console_data_from_leveldb():
-  File "/opt/work/kibana-dev-tools-saver/./kibana-dev-tools-saver.py", line 71, in extract_console_data_from_leveldb
-    db = plyvel.DB(args.temp_dir, create_if_missing=False)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "kibana-dev-tools-saver.py", line 174, in main
+    for origin, text_content in extractor:
+  File "kibana-dev-tools-saver.py", line 113, in extract_console_data_from_leveldb
+    db = plyvel.DB(temp_path, create_if_missing=False)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "plyvel/_plyvel.pyx", line 247, in plyvel._plyvel.DB.__init__
   File "plyvel/_plyvel.pyx", line 91, in plyvel._plyvel.raise_for_status
 plyvel._plyvel.CorruptionError: b'Corruption: 1 missing files; e.g.: /tmp/kibana-dev-tools-saver//000446.ldb'
@@ -107,4 +145,3 @@ Feel free to submit issues/suggestions, or make changes and open pull requests. 
 ## License
 
 This project is open-source and available under the MIT License.
-
